@@ -10,10 +10,12 @@
     <!-- NuGet -->
     <PackageId>Postmaster.EntityFrameworkCore</PackageId>
     <Version>1.0.0</Version>
-    <Authors>Bashar Abu Jaab</Authors>
+    <Authors>Bashar Abu Joub</Authors>
     <Description>Entity Framework Core storage provider for Postmaster</Description>
     <PackageTags>outbox;http;reliability;dotnet;efcore</PackageTags>
     <RepositoryUrl>https://github.com/BasharAbuJaab/postmaster</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
