@@ -8,7 +8,7 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
     
     <!-- NuGet -->
-    <PackageId>Postmaster</PackageId>
+    <PackageId>Postmaster.Core</PackageId>
     <Version>1.0.0</Version>
     <Authors>Bashar Abu Joub</Authors>
     <Description>A robust outbox-backed HTTP dispatcher for .NET</Description>
