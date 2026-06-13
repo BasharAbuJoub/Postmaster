@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Postmaster.Sample/Postmaster.Sample.csproj" Id="9e22a225-a2ac-4783-83d9-35cda4ff4a53" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Postmaster.Core/Postmaster.Core.csproj" Id="dd4a7d80-2bc3-4166-97e6-689de4c07646" />
+    <Project Path="src/Postmaster.Dashboard/Postmaster.Dashboard.csproj" Id="d3274ac4-ce5e-451f-9242-a6a009274b23" />
+    <Project Path="src/Postmaster.EntityFrameworkCore/Postmaster.EntityFrameworkCore.csproj" Id="5601213a-27ae-486d-b1ac-80af2c87d32e" />
+    <Project Path="src/Postmaster.Hangfire/Postmaster.Hangfire.csproj" Id="4abad510-8446-4d7f-ac4b-87212be06f57" />
+  </Folder>
+</Solution>
