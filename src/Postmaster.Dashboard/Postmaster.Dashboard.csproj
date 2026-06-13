@@ -14,7 +14,7 @@
     <Authors>Bashar Abu Joub</Authors>
     <Description>Embedded dashboard UI for Postmaster</Description>
     <PackageTags>outbox;http;reliability;dotnet;dashboard</PackageTags>
-    <RepositoryUrl>https://github.com/BasharAbuJaab/postmaster</RepositoryUrl>
+    <RepositoryUrl>https://github.com/BasharAbuJoub/Postmaster</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>

@@ -13,7 +13,7 @@
     <Authors>Bashar Abu Joub</Authors>
     <Description>Hangfire integration for Postmaster</Description>
     <PackageTags>outbox;http;reliability;dotnet;hangfire</PackageTags>
-    <RepositoryUrl>https://github.com/BasharAbuJaab/postmaster</RepositoryUrl>
+    <RepositoryUrl>https://github.com/BasharAbuJoub/Postmaster</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
