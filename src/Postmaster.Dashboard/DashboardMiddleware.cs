@@ -209,7 +209,8 @@ namespace Postmaster.Dashboard
 
             using var reader = new StreamReader(stream);
             var content = await reader.ReadToEndAsync();
-            content = content.Replace("{{PREFIX}}", _prefix);
+            var effectivePrefix = (_options.PathBase?.TrimEnd('/') ?? "") + _prefix;
+            content = content.Replace("{{PREFIX}}", effectivePrefix);
             await context.Response.WriteAsync(content);
         }
     }
