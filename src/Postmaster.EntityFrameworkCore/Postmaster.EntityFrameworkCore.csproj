@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- NuGet -->
+    <PackageId>Postmaster.EntityFrameworkCore</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Bashar Abu Joub</Authors>
+    <Description>Entity Framework Core storage provider for Postmaster</Description>
+    <PackageTags>outbox;http;reliability;dotnet;efcore</PackageTags>
+    <RepositoryUrl>https://github.com/BasharAbuJoub/Postmaster</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Postmaster.Core\Postmaster.Core.csproj" />
+  </ItemGroup>
+
+</Project>

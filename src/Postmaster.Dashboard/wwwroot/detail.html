@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message — Postmaster</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-900">
+
+  <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4">
+    <a href="{{PREFIX}}/" class="text-gray-400 hover:text-gray-600 text-lg leading-none">←</a>
+    <span class="text-xl">📬</span>
+    <span class="text-lg font-semibold">Postmaster</span>
+  </header>
+
+  <div id="loading" class="text-center py-16 text-sm text-gray-400">Loading…</div>
+  <div id="not-found" class="hidden text-center py-16 text-sm text-gray-400">Message not found.</div>
+
+  <main id="content" class="hidden max-w-4xl mx-auto px-6 py-6">
+
+    <!-- Title row -->
+    <div class="flex items-start justify-between mb-6">
+      <div class="min-w-0">
+        <div class="flex items-center gap-3 mb-1 flex-wrap">
+          <span id="detail-method" class="font-mono text-sm font-bold text-gray-700"></span>
+          <span id="detail-status"></span>
+        </div>
+        <div id="detail-url" class="text-sm text-gray-500 font-mono break-all"></div>
+      </div>
+      <div id="actions" class="flex gap-2 ml-4 shrink-0 flex-wrap"></div>
+    </div>
+
+    <!-- Info grid -->
+    <div class="bg-white rounded-lg border border-gray-200 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 px-5 py-5 text-sm">
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">ID</div>
+          <div id="detail-id" class="font-mono text-xs break-all text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Correlation ID</div>
+          <div id="detail-correlation" class="font-mono text-xs break-all text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Channel</div>
+          <div id="detail-channel" class="text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Retries</div>
+          <div id="detail-retries" class="text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Created</div>
+          <div id="detail-created" class="text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Next Attempt</div>
+          <div id="detail-next" class="text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Processed At</div>
+          <div id="detail-processed" class="text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Elapsed</div>
+          <div id="detail-elapsed" class="text-gray-700"></div>
+        </div>
+        <div>
+          <div class="text-xs font-medium text-gray-400 mb-0.5">Response Status</div>
+          <div id="detail-response-status" class="text-gray-700"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sections -->
+    <div class="space-y-3">
+
+      <div id="section-error" class="hidden rounded-lg border border-red-200 bg-red-50 overflow-hidden">
+        <div class="px-4 py-2.5 text-xs font-semibold text-red-700 uppercase tracking-wide border-b border-red-200">Error</div>
+        <pre id="detail-error" class="px-4 py-3 text-xs text-red-600 whitespace-pre-wrap break-all overflow-x-auto"></pre>
+      </div>
+
+      <div id="section-headers" class="hidden rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div class="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">Headers</div>
+        <pre id="detail-headers" class="px-4 py-3 text-xs text-gray-600 whitespace-pre-wrap overflow-x-auto"></pre>
+      </div>
+
+      <div id="section-payload" class="hidden rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div class="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">Payload</div>
+        <pre id="detail-payload" class="px-4 py-3 text-xs text-gray-600 whitespace-pre-wrap overflow-x-auto"></pre>
+      </div>
+
+      <div id="section-response" class="hidden rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div class="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">Response Body</div>
+        <pre id="detail-response" class="px-4 py-3 text-xs text-gray-600 whitespace-pre-wrap overflow-x-auto"></pre>
+      </div>
+
+      <div id="section-metadata" class="hidden rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div class="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">Metadata</div>
+        <pre id="detail-metadata" class="px-4 py-3 text-xs text-gray-600 whitespace-pre-wrap overflow-x-auto"></pre>
+      </div>
+
+    </div>
+  </main>
+
+  <script>window.PM_PREFIX = '{{PREFIX}}';</script>
+  <script src="{{PREFIX}}/app.js"></script>
+</body>
+</html>

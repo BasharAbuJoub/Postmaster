@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postmaster Dashboard</title>
+  <script src="{{PREFIX}}/vendor/tailwind.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    pre { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace; }
+  </style>
+</head>
+<body class="bg-neutral-950 min-h-screen text-neutral-100 antialiased">
+
+  <!-- Header (static, outside Alpine) -->
+  <header class="bg-neutral-900 border-b border-neutral-800 px-6 py-3.5 flex items-center gap-3">
+    <span class="text-white text-lg">📬</span>
+    <span class="text-white font-semibold tracking-tight">Postmaster</span>
+    <span class="ml-1 text-neutral-500 text-sm font-medium">Dashboard</span>
+  </header>
+
+  <!-- Alpine root -->
+  <div x-data="dashboard" x-cloak class="max-w-[1400px] mx-auto px-6 py-5 flex gap-5 items-start">
+
+    <!-- Sidebar -->
+    <aside class="w-52 shrink-0 sticky top-5">
+      <div class="bg-neutral-900 rounded-md border border-neutral-800 overflow-hidden shadow-sm">
+        <div class="px-4 py-3 border-b border-neutral-800">
+          <span class="text-sm font-semibold text-neutral-500 uppercase tracking-widest">Messages</span>
+        </div>
+        <nav>
+          <template x-for="item in sidebarItems" :key="item.key">
+            <button @click="filterByStatus(item.value)"
+              :class="sidebarBtnCls(item.key)"
+              class="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors border-l-2">
+              <span x-text="item.label"></span>
+              <span x-text="statCount(item.key)" :class="sidebarCountCls(item)"></span>
+            </button>
+          </template>
+        </nav>
+        <div class="px-4 py-3 border-t border-neutral-800 space-y-2">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-neutral-500">Success rate</span>
+            <span x-text="successRate" class="font-semibold text-neutral-200"></span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-neutral-500">Avg elapsed</span>
+            <span x-text="avgElapsed" class="font-semibold text-neutral-200"></span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="flex-1 min-w-0 space-y-4">
+
+      <!-- ── List view ── -->
+      <div x-show="view === 'list'" class="space-y-4">
+
+        <!-- Filter bar -->
+        <div x-data="{ expanded: false }" class="bg-neutral-900 rounded-md border border-neutral-800 shadow-sm overflow-hidden">
+          <!-- Main row -->
+          <div class="flex flex-wrap divide-y sm:divide-y-0 sm:divide-x divide-neutral-800">
+            <div class="flex-1 min-w-40 px-4 py-3">
+              <div class="text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-1.5">Channel</div>
+              <input x-model="filters.channel" @keydown.enter="applyFilters()" type="text" placeholder="e.g. user-123"
+                class="w-full text-sm bg-transparent focus:outline-none text-neutral-100 placeholder-neutral-600" />
+            </div>
+            <div class="flex-1 min-w-40 px-4 py-3">
+              <div class="text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-1.5">From</div>
+              <input x-model="filters.from" type="datetime-local"
+                class="w-full text-sm bg-transparent focus:outline-none text-neutral-100 [color-scheme:dark]" />
+            </div>
+            <div class="flex-1 min-w-40 px-4 py-3">
+              <div class="text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-1.5">To</div>
+              <input x-model="filters.to" type="datetime-local"
+                class="w-full text-sm bg-transparent focus:outline-none text-neutral-100 [color-scheme:dark]" />
+            </div>
+            <div class="flex items-center gap-2 px-4 py-3 bg-neutral-800">
+              <button @click="applyFilters()"
+                class="px-4 py-1.5 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 active:bg-indigo-700 transition-colors shadow-sm whitespace-nowrap">
+                Search
+              </button>
+              <button @click="clearFilters()"
+                class="px-3 py-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-300 transition-colors whitespace-nowrap">
+                Clear
+              </button>
+              <button @click="expanded = !expanded"
+                :class="expanded ? 'text-indigo-400 hover:text-indigo-300' : 'text-neutral-500 hover:text-neutral-300'"
+                class="px-2 py-1.5 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 transition-transform" :class="expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                <span x-text="expanded ? 'Less' : 'More'"></span>
+              </button>
+            </div>
+          </div>
+          <!-- Expanded row -->
+          <div x-show="expanded" x-collapse class="flex flex-wrap divide-x divide-neutral-800 border-t border-neutral-800">
+            <div class="flex-[2] min-w-52 px-4 py-3">
+              <div class="text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-1.5">Correlation ID</div>
+              <input x-model="filters.correlationId" @keydown.enter="applyFilters()" type="text" placeholder="Exact match"
+                class="w-full text-sm bg-transparent focus:outline-none text-neutral-100 placeholder-neutral-600" />
+            </div>
+            <div class="flex-[2] min-w-52 px-4 py-3">
+              <div class="text-sm font-semibold text-neutral-500 uppercase tracking-widest mb-1.5">Metadata</div>
+              <input x-model="filters.metadata" @keydown.enter="applyFilters()" type="text" placeholder="Substring search"
+                class="w-full text-sm bg-transparent focus:outline-none text-neutral-100 placeholder-neutral-600" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-neutral-900 rounded-md border border-neutral-800 overflow-hidden shadow-sm">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="border-b border-neutral-800 bg-neutral-800">
+                <th class="text-left px-4 py-3 text-sm font-semibold text-neutral-500 uppercase tracking-wider w-10">#</th>
+                <th class="text-left px-4 py-3 text-sm font-semibold text-neutral-500 uppercase tracking-wider">Method</th>
+                <th class="text-left px-4 py-3 text-sm font-semibold text-neutral-500 uppercase tracking-wider">URL</th>
+                <th class="text-left px-4 py-3 text-sm font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+                <th class="text-left px-4 py-3 text-sm font-semibold text-neutral-500 uppercase tracking-wider">Channel</th>
+                <th class="text-left px-4 py-3 text-sm font-semibold text-neutral-500 uppercase tracking-wider">Retries</th>
+                <th class="text-left px-4 py-3 text-sm font-semibold text-neutral-500 uppercase tracking-wider">Created</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-800">
+              <template x-for="m in messages" :key="m.id">
+                <tr @click="showDetail(m.id)" class="group hover:bg-neutral-800/50 transition-colors cursor-pointer">
+                  <td x-text="m._index" class="px-4 py-3 text-base text-neutral-600 tabular-nums select-none"></td>
+                  <td class="px-4 py-3">
+                    <span x-text="m.method" class="font-mono text-sm font-bold px-1.5 py-0.5 bg-neutral-700 text-white rounded"></span>
+                  </td>
+                  <td class="px-4 py-3 text-base text-neutral-400 max-w-xs">
+                    <span x-text="m.url" :title="m.url" class="block truncate"></span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span x-text="m._statusMeta.label" :class="m._statusMeta.cls"
+                      class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold"></span>
+                  </td>
+                  <td class="px-4 py-3 text-base text-neutral-500 max-w-[120px]">
+                    <span x-text="m.channel ?? '—'" :title="m.channel ?? ''" class="block truncate"></span>
+                  </td>
+                  <td x-text="`${m.retryCount}/${m.maxRetryCount}`" class="px-4 py-3 text-base text-neutral-500"></td>
+                  <td x-text="m._fmtCreated" class="px-4 py-3 text-base text-neutral-500 whitespace-nowrap"></td>
+                  <td class="px-4 py-3 text-right">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded bg-neutral-800 text-neutral-500 group-hover:bg-indigo-950 group-hover:text-indigo-400 transition-colors">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div x-show="listLoading" class="text-center py-16 text-base text-neutral-500">Loading…</div>
+          <div x-show="!listLoading && !listError && messages.length === 0" class="text-center py-16 text-base text-neutral-500">No messages found.</div>
+          <div x-show="listError" x-text="'Failed to load: ' + listError" class="text-center py-8 text-sm text-red-400"></div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-between">
+          <span x-text="pageInfo" class="text-base text-neutral-500"></span>
+          <div class="flex gap-2">
+            <button @click="changePage(-1)" :disabled="!hasPrev"
+              class="px-3 py-1.5 text-sm font-medium border border-neutral-700 rounded-md bg-neutral-900 text-neutral-300 hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              ← Prev
+            </button>
+            <button @click="changePage(1)" :disabled="!hasNext"
+              class="px-3 py-1.5 text-sm font-medium border border-neutral-700 rounded-md bg-neutral-900 text-neutral-300 hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Detail view ── -->
+      <div x-show="view === 'detail'" class="space-y-4">
+
+        <button @click="showList()" class="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-200 font-medium transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Back to messages
+        </button>
+
+        <div x-show="detailLoading" class="text-center py-16 text-base text-neutral-500">Loading…</div>
+        <div x-show="detailNotFound && !detailLoading" class="text-center py-16 text-base text-neutral-500">Message not found.</div>
+
+        <template x-if="detail">
+          <div class="space-y-4">
+
+            <!-- Title card -->
+            <div class="bg-neutral-900 rounded-md border border-neutral-800 px-5 py-4 shadow-sm">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2.5 mb-2 flex-wrap">
+                    <span x-text="detail.method" class="font-mono text-sm font-bold px-2 py-1 bg-neutral-700 text-white rounded-md tracking-wide"></span>
+                    <span x-text="detail._statusMeta.label" :class="detail._statusMeta.cls"
+                      class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold"></span>
+                  </div>
+                  <div x-text="detail.url" class="text-base text-neutral-400 font-mono break-all leading-relaxed"></div>
+                </div>
+                <div class="flex gap-2 shrink-0 mt-0.5">
+                  <button x-show="detail._canReset" @click="resetMessage()"
+                    class="px-3 py-1.5 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 active:bg-indigo-700 shadow-sm transition-colors">Reset</button>
+                  <button x-show="detail._canCancel" @click="cancelMessage()"
+                    class="px-3 py-1.5 text-sm font-semibold bg-neutral-800 text-red-400 border border-red-900 rounded-md hover:bg-red-950 active:bg-red-900 transition-colors">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Info grid (3-column) -->
+            <div class="bg-neutral-900 rounded-md border border-neutral-800 shadow-sm overflow-hidden">
+              <div class="grid grid-cols-3">
+                <div class="px-4 py-3 border-b border-r border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">ID</div>
+                  <div x-text="detail.id" class="font-mono text-sm text-neutral-200 break-all"></div>
+                </div>
+                <div class="px-4 py-3 border-b border-r border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Correlation ID</div>
+                  <div x-text="detail.correlationId ?? '—'" class="font-mono text-sm text-neutral-200 break-all"></div>
+                </div>
+                <div class="px-4 py-3 border-b border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Channel</div>
+                  <div x-text="detail.channel ?? '—'" class="text-sm text-neutral-200"></div>
+                </div>
+                <div class="px-4 py-3 border-b border-r border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Retries</div>
+                  <div x-text="`${detail.retryCount} / ${detail.maxRetryCount}`" class="text-sm text-neutral-200 tabular-nums"></div>
+                </div>
+                <div class="px-4 py-3 border-b border-r border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Created</div>
+                  <div x-text="detail._fmtCreated" class="text-sm text-neutral-200"></div>
+                </div>
+                <div class="px-4 py-3 border-b border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Next Attempt</div>
+                  <div x-text="detail._fmtNext" class="text-sm text-neutral-200"></div>
+                </div>
+                <div class="px-4 py-3 border-r border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Processed At</div>
+                  <div x-text="detail._fmtProcessed" class="text-sm text-neutral-200"></div>
+                </div>
+                <div class="px-4 py-3 border-r border-neutral-800">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Elapsed</div>
+                  <div x-text="detail._elapsedLabel" class="text-sm text-neutral-200 tabular-nums"></div>
+                </div>
+                <div class="px-4 py-3">
+                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Response Status</div>
+                  <div x-text="detail.responseStatusCode ?? '—'" class="text-sm text-neutral-200 tabular-nums"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expandable sections (error, headers, payload, response, metadata) -->
+            <template x-for="(section, index) in detailSections" :key="section.id">
+              <div :class="section.isError ? 'border-red-900' : 'border-neutral-800'" class="rounded-md border overflow-hidden shadow-sm">
+                <div :class="section.isError ? 'bg-red-950/60 border-b border-red-900' : 'bg-neutral-800 border-b border-neutral-800'"
+                     class="px-5 py-3 flex items-center gap-3">
+                  <span :class="section.isError ? 'text-red-400' : 'text-neutral-500'"
+                        x-text="section.label" class="text-sm font-semibold uppercase tracking-widest"></span>
+                  <span x-show="section.meta" x-html="section.meta" class="text-sm font-mono"></span>
+                </div>
+                <pre :class="[section.isError ? 'text-red-300 bg-red-950/20' : 'text-neutral-300 bg-neutral-900', section.preClass]"
+                     class="px-5 py-4 text-sm whitespace-pre-wrap overflow-auto leading-relaxed"
+                     x-text="section.showFull ? section.value : section.text"></pre>
+                <div x-show="section.truncated && !section.showFull"
+                     class="flex items-center justify-between px-5 py-2 text-sm text-amber-400 bg-amber-950/40 border-t border-amber-900">
+                  <span>Showing first <span x-text="section.kbShown"></span> KB of <span x-text="section.kbTotal"></span> KB.</span>
+                  <button @click="section.showFull = true" class="font-medium underline hover:text-amber-300">Show full</button>
+                </div>
+              </div>
+            </template>
+
+          </div>
+        </template>
+
+      </div>
+    </div>
+  </div>
+
+  <script>window.PM_PREFIX = '{{PREFIX}}';</script>
+  <script src="{{PREFIX}}/app.js"></script>
+  <script defer src="{{PREFIX}}/vendor/alpine-collapse.min.js"></script>
+  <script defer src="{{PREFIX}}/vendor/alpine.min.js"></script>
+</body>
+</html>
