@@ -31,5 +31,12 @@ namespace Postmaster.Core
         /// Default: <c>10 minutes</c>.
         /// </summary>
         public TimeSpan ProcessingTimeout { get; set; } = TimeSpan.FromMinutes(10);
+
+        /// <summary>
+        /// Whether to bypass TLS server certificate validation for outbound HTTP requests.
+        /// Keep this disabled in production unless temporarily required while resolving a
+        /// certificate or certificate authority configuration issue. Default: <c>false</c>.
+        /// </summary>
+        public bool BypassSslCertificateValidation { get; set; }
     }
 }

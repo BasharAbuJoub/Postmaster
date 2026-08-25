@@ -91,6 +91,9 @@ builder.Services.AddPostmaster(postmaster =>
         options.DefaultMaxRetryCount = 5;
         options.PollingInterval = TimeSpan.FromSeconds(10);
         options.ProcessingTimeout = TimeSpan.FromMinutes(5);
+
+        // Emergency-only: fix the server certificate or trusted CA instead whenever possible.
+        options.BypassSslCertificateValidation = true;
     });
     postmaster.UseEntityFrameworkCore<AppDbContext>();
     postmaster.UseBackgroundService();
@@ -381,6 +384,10 @@ Multiple handlers can be registered — all are called after each message is per
 | `DefaultMaxRetryCount` | `3` | Default retry limit for messages that don't specify their own |
 | `PollingInterval` | `30s` | How long the processor waits when there are no pending messages |
 | `ProcessingTimeout` | `10min` | How long a message can stay in `Processing` before being recovered |
+| `BypassSslCertificateValidation` | `false` | Bypasses TLS server certificate validation; enable only temporarily while resolving a certificate issue |
+
+> [!WARNING]
+> Setting `BypassSslCertificateValidation` to `true` accepts any server certificate and makes outbound requests vulnerable to man-in-the-middle attacks. Repair the endpoint certificate or trust chain and return this setting to `false` as soon as possible.
 
 ## 🛡️ Delivery Guarantee
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Postmaster.Core;
 using Postmaster.Core.Abstractions;
 using Postmaster.Core.Processor;
@@ -29,7 +30,17 @@ namespace Postmaster
             Action<PostmasterBuilder>? configure = null)
         {
             services.AddOptions<PostmasterOptions>();
-            services.AddHttpClient("Postmaster");
+            services.AddHttpClient("Postmaster")
+                .ConfigurePrimaryHttpMessageHandler(serviceProvider =>
+                {
+                    var options = serviceProvider.GetRequiredService<IOptions<PostmasterOptions>>().Value;
+                    var handler = new HttpClientHandler();
+
+                    if (options.BypassSslCertificateValidation)
+                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+
+                    return handler;
+                });
             services.AddScoped<IOutboxPublisher, OutboxPublisher>();
             services.AddSingleton<IOutboxProcessor, OutboxProcessor>();
 
