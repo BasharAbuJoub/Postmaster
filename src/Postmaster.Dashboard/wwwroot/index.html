@@ -275,6 +275,12 @@
                   <div x-text="detail.url" class="text-base text-neutral-400 font-mono break-all leading-relaxed"></div>
                 </div>
                 <div class="flex gap-2 shrink-0 mt-0.5">
+                  <button @click="copyCurl()" title="Copy as cURL"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold bg-neutral-800 text-neutral-300 border border-neutral-700 rounded-md hover:bg-neutral-700 hover:text-white transition-colors">
+                    <svg x-show="!copiedCurl" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l-3 3 3 3m8-6l3 3-3 3m-5 3 2-12"/></svg>
+                    <svg x-show="copiedCurl" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span x-text="copiedCurl ? 'Copied' : 'Copy cURL'"></span>
+                  </button>
                   <button x-show="detail._canReset" @click="resetMessage()"
                     class="px-3 py-1.5 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 active:bg-indigo-700 shadow-sm transition-colors">Reset</button>
                   <button x-show="detail._canCancel" @click="cancelMessage()"

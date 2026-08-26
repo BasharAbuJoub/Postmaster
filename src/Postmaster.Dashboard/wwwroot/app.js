@@ -67,6 +67,50 @@ function highlightJson(str) {
   });
 }
 
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", `'"'"'`)}'`;
+}
+
+function buildCurl(message) {
+  let headers = {};
+  try {
+    const parsed = JSON.parse(message.headers || '{}');
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) headers = parsed;
+  } catch { }
+
+  const hasHeader = name => Object.keys(headers).some(key => key.toLowerCase() === name.toLowerCase());
+  if (message.correlationId && !hasHeader('X-Correlation-Id'))
+    headers['X-Correlation-Id'] = message.correlationId;
+  if (message.payload && !hasHeader('Content-Type'))
+    headers['Content-Type'] = 'application/json';
+
+  const parts = [
+    'curl',
+    `  --request ${shellQuote(message.method)}`,
+    `  --url ${shellQuote(message.url)}`,
+    ...Object.entries(headers).map(([key, value]) => `  --header ${shellQuote(`${key}: ${value}`)}`),
+  ];
+
+  if (message.payload) parts.push(`  --data-raw ${shellQuote(message.payload)}`);
+  return parts.join(' \\\n');
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  textarea.remove();
+}
+
 function statusCodeCls(code) {
   if (code >= 500) return 'text-red-400';
   if (code >= 400) return 'text-amber-400';
@@ -148,6 +192,7 @@ document.addEventListener('alpine:init', () => {
     detail: null,
     detailSections: [],
     copiedSectionId: null,
+    copiedCurl: false,
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -409,18 +454,7 @@ document.addEventListener('alpine:init', () => {
 
     async copySection(section) {
       try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(section.value);
-        } else {
-          const textarea = document.createElement('textarea');
-          textarea.value = section.value;
-          textarea.style.position = 'fixed';
-          textarea.style.opacity = '0';
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand('copy');
-          textarea.remove();
-        }
+        await copyText(section.value);
 
         this.copiedSectionId = section.id;
         setTimeout(() => {
@@ -428,6 +462,16 @@ document.addEventListener('alpine:init', () => {
         }, 2_000);
       } catch (e) {
         alert('Copy failed: ' + e.message);
+      }
+    },
+
+    async copyCurl() {
+      try {
+        await copyText(buildCurl(this.detail));
+        this.copiedCurl = true;
+        setTimeout(() => { this.copiedCurl = false; }, 2_000);
+      } catch (e) {
+        alert('Copy cURL failed: ' + e.message);
       }
     },
 
