@@ -31,6 +31,8 @@ const STATS_KEYS = {
   '2': 'succeeded', '3': 'failed', '4': 'dead', '5': 'cancelled',
 };
 
+const TERMINAL_STATUSES = new Set(['Succeeded', 'Dead', 'Cancelled']);
+
 function fmt(dt) {
   if (!dt) return '—';
   return new Date(dt).toLocaleString();
@@ -89,6 +91,9 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('dashboard', () => ({
     sidebarItems: SIDEBAR_ITEMS,
 
+    // Theme
+    theme: localStorage.getItem('postmaster-theme') === 'light' ? 'light' : 'dark',
+
     // Stats
     stats: null,
 
@@ -123,10 +128,16 @@ document.addEventListener('alpine:init', () => {
       }
       this._fetchStats();
 
-      setInterval(() => this._fetchStats(), 30_000);
+      setInterval(() => this._fetchStats(), 5_000);
+      setInterval(() => this._refreshList(), 5_000);
+      setInterval(() => this._refreshDetail(), 5_000);
 
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') this._fetchStats();
+        if (document.visibilityState === 'visible') {
+          this._fetchStats();
+          this._refreshList();
+          this._refreshDetail();
+        }
       });
 
       window.addEventListener('popstate', () => {
@@ -162,6 +173,11 @@ document.addEventListener('alpine:init', () => {
       return this.stats.averageElapsedMs > 0 ? Math.round(this.stats.averageElapsedMs) + ' ms' : '—';
     },
 
+    toggleTheme() {
+      this.theme = this.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('postmaster-theme', this.theme);
+    },
+
     // ── Navigation ────────────────────────────────────────────────────────────
 
     showList(push = true) {
@@ -182,6 +198,10 @@ document.addEventListener('alpine:init', () => {
       this.page = 1;
       this.filters.status = value;
       this.activeStatus = value === '' ? 'all' : value;
+      if (this.view !== 'list') {
+        this.view = 'list';
+        history.pushState({}, '', PREFIX + '/');
+      }
       this._fetchMessages();
       this._fetchStats();
     },
@@ -221,10 +241,10 @@ document.addEventListener('alpine:init', () => {
 
     // ── Messages list ─────────────────────────────────────────────────────────
 
-    async _fetchMessages() {
+    async _fetchMessages(isRefresh = false) {
       this.listLoading = true;
       this.listError = null;
-      this.messages = [];
+      if (!isRefresh) this.messages = [];
 
       const params = new URLSearchParams();
       if (this.filters.status) params.set('status', this.filters.status);
@@ -255,6 +275,14 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    _refreshList() {
+      if (document.visibilityState !== 'visible'
+        || this.view !== 'list'
+        || this.listLoading) return;
+
+      this._fetchMessages(true);
+    },
+
     // ── Detail ────────────────────────────────────────────────────────────────
 
     async _fetchDetail(id) {
@@ -282,6 +310,16 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.detailLoading = false;
       }
+    },
+
+    _refreshDetail() {
+      if (document.visibilityState !== 'visible'
+        || this.view !== 'detail'
+        || this.detailLoading
+        || !this.detail
+        || TERMINAL_STATUSES.has(this.detail.status)) return;
+
+      this._fetchDetail(this.detail.id);
     },
 
     async resetMessage() {

@@ -8,19 +8,65 @@
   <style>
     [x-cloak] { display: none !important; }
     pre { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace; }
+    body[data-theme="light"] { color-scheme: light; }
+    body[data-theme="light"].bg-neutral-950 { background-color: #f8fafc; color: #1e293b; }
+    body[data-theme="light"] .bg-neutral-900 { background-color: #ffffff; }
+    body[data-theme="light"] .bg-neutral-800 { background-color: #f8fafc; }
+    body[data-theme="light"] .bg-neutral-700 { background-color: #eef2f7; }
+    body[data-theme="light"] .border-neutral-800,
+    body[data-theme="light"] .border-neutral-700,
+    body[data-theme="light"] .divide-neutral-800 > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0; }
+    body[data-theme="light"] .text-neutral-100,
+    body[data-theme="light"] .text-neutral-200 { color: #1e293b; }
+    body[data-theme="light"] .text-neutral-300 { color: #334155; }
+    body[data-theme="light"] .text-neutral-400 { color: #475569; }
+    body[data-theme="light"] .text-neutral-500 { color: #64748b; }
+    body[data-theme="light"] .text-neutral-600 { color: #94a3b8; }
+    body[data-theme="light"] header .text-white,
+    body[data-theme="light"] .bg-neutral-700.text-white { color: #1e293b; }
+    body[data-theme="light"] .hover\:bg-neutral-800:hover { background-color: #f1f5f9; }
+    body[data-theme="light"] .hover\:text-neutral-200:hover,
+    body[data-theme="light"] .hover\:text-neutral-300:hover { color: #1e293b; }
+    body[data-theme="light"] .bg-indigo-950 { background-color: #eef2ff; }
+    body[data-theme="light"] .text-indigo-400 { color: #4f46e5; }
+    body[data-theme="light"] .border-indigo-500 { border-color: #6366f1; }
+    body[data-theme="light"] .group:hover .group-hover\:bg-indigo-950 { background-color: #e0e7ff; }
+    body[data-theme="light"] .group:hover .group-hover\:text-indigo-400 { color: #4338ca; }
+    body[data-theme="light"] .bg-blue-950 { background-color: #eff6ff; }
+    body[data-theme="light"] .text-blue-400 { color: #2563eb; }
+    body[data-theme="light"] .ring-blue-800 { --tw-ring-color: #bfdbfe; }
+    body[data-theme="light"] .bg-amber-950 { background-color: #fffbeb; }
+    body[data-theme="light"] .text-amber-400 { color: #d97706; }
+    body[data-theme="light"] .ring-amber-800 { --tw-ring-color: #fde68a; }
+    body[data-theme="light"] .bg-emerald-950 { background-color: #ecfdf5; }
+    body[data-theme="light"] .text-emerald-400 { color: #059669; }
+    body[data-theme="light"] .ring-emerald-800 { --tw-ring-color: #a7f3d0; }
+    body[data-theme="light"] .bg-red-950 { background-color: #fff1f2; }
+    body[data-theme="light"] .text-red-400 { color: #dc2626; }
+    body[data-theme="light"] .ring-red-800 { --tw-ring-color: #fecdd3; }
+    body[data-theme="light"] .border-red-900 { border-color: #fecdd3; }
+    body[data-theme="light"] .bg-red-950\/60 { background-color: #fff1f2; }
+    body[data-theme="light"] .bg-red-950\/20 { background-color: #fff7f7; }
+    body[data-theme="light"] input[type="datetime-local"] { color-scheme: light; }
   </style>
 </head>
-<body class="bg-neutral-950 min-h-screen text-neutral-100 antialiased">
+<body x-data="dashboard" x-bind:data-theme="theme" x-cloak class="bg-neutral-950 min-h-screen text-neutral-100 antialiased">
 
   <!-- Header (static, outside Alpine) -->
   <header class="bg-neutral-900 border-b border-neutral-800 px-6 py-3.5 flex items-center gap-3">
     <span class="text-white text-lg">📬</span>
     <span class="text-white font-semibold tracking-tight">Postmaster</span>
     <span class="ml-1 text-neutral-500 text-sm font-medium">Dashboard</span>
+    <button @click="toggleTheme()" :aria-label="theme === 'dark' ? 'Use light mode' : 'Use dark mode'"
+      class="ml-auto inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm font-medium text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 transition-colors">
+      <svg x-show="theme === 'dark'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.35 17.65l-.71.71m12.72 0-.71-.71M6.35 6.35l-.71-.71M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+      <svg x-show="theme === 'light'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 1012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      <span x-text="theme === 'dark' ? 'Light mode' : 'Dark mode'"></span>
+    </button>
   </header>
 
   <!-- Alpine root -->
-  <div x-data="dashboard" x-cloak class="max-w-[1400px] mx-auto px-6 py-5 flex gap-5 items-start">
+  <div class="max-w-[1400px] mx-auto px-6 py-5 flex gap-5 items-start">
 
     <!-- Sidebar -->
     <aside class="w-52 shrink-0 sticky top-5">
@@ -127,7 +173,7 @@
             </thead>
             <tbody class="divide-y divide-neutral-800">
               <template x-for="m in messages" :key="m.id">
-                <tr @click="showDetail(m.id)" class="group hover:bg-neutral-800/50 transition-colors cursor-pointer">
+                <tr @click="showDetail(m.id)" :class="theme === 'light' ? 'hover:bg-slate-100' : 'hover:bg-neutral-800/50'" class="group transition-colors cursor-pointer">
                   <td x-text="m._index" class="px-4 py-3 text-base text-neutral-600 tabular-nums select-none"></td>
                   <td class="px-4 py-3">
                     <span x-text="m.method" class="font-mono text-sm font-bold px-1.5 py-0.5 bg-neutral-700 text-white rounded"></span>
