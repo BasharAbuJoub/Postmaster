@@ -8,6 +8,11 @@
   <style>
     [x-cloak] { display: none !important; }
     pre { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace; }
+    .json-key { color: #a5b4fc; }
+    .json-string { color: #86efac; }
+    .json-number { color: #fbbf24; }
+    .json-boolean { color: #f0abfc; }
+    .json-null { color: #94a3b8; }
     body[data-theme="light"] { color-scheme: light; }
     body[data-theme="light"].bg-neutral-950 { background-color: #f8fafc; color: #1e293b; }
     body[data-theme="light"] .bg-neutral-900 { background-color: #ffffff; }
@@ -47,6 +52,11 @@
     body[data-theme="light"] .border-red-900 { border-color: #fecdd3; }
     body[data-theme="light"] .bg-red-950\/60 { background-color: #fff1f2; }
     body[data-theme="light"] .bg-red-950\/20 { background-color: #fff7f7; }
+    body[data-theme="light"] .json-key { color: #4338ca; }
+    body[data-theme="light"] .json-string { color: #047857; }
+    body[data-theme="light"] .json-number { color: #b45309; }
+    body[data-theme="light"] .json-boolean { color: #a21caf; }
+    body[data-theme="light"] .json-null { color: #64748b; }
     body[data-theme="light"] input[type="datetime-local"] { color-scheme: light; }
   </style>
 </head>
@@ -57,12 +67,31 @@
     <span class="text-white text-lg">📬</span>
     <span class="text-white font-semibold tracking-tight">Postmaster</span>
     <span class="ml-1 text-neutral-500 text-sm font-medium">Dashboard</span>
-    <button @click="toggleTheme()" :aria-label="theme === 'dark' ? 'Use light mode' : 'Use dark mode'"
-      class="ml-auto inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm font-medium text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 transition-colors">
-      <svg x-show="theme === 'dark'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.35 17.65l-.71.71m12.72 0-.71-.71M6.35 6.35l-.71-.71M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
-      <svg x-show="theme === 'light'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 1012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-      <span x-text="theme === 'dark' ? 'Light mode' : 'Dark mode'"></span>
-    </button>
+    <div class="ml-auto flex items-center gap-2">
+      <div class="hidden lg:flex items-center gap-2 text-sm text-neutral-500" :title="lastUpdatedLabel">
+        <span :class="refreshActive ? 'bg-indigo-400 animate-pulse' : (autoRefresh ? 'bg-emerald-400' : 'bg-neutral-600')" class="w-2 h-2 rounded-full"></span>
+        <span x-text="lastUpdatedLabel"></span>
+      </div>
+      <select x-model.number="refreshInterval" @change="updateRefreshInterval()" :disabled="!autoRefresh" aria-label="Refresh interval"
+        class="rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50">
+        <option value="5000">5 sec</option>
+        <option value="10000">10 sec</option>
+        <option value="30000">30 sec</option>
+        <option value="60000">60 sec</option>
+      </select>
+      <button @click="toggleAutoRefresh()" :aria-pressed="autoRefresh" :title="autoRefresh ? 'Pause auto-refresh' : 'Resume auto-refresh'"
+        :class="autoRefresh ? 'text-emerald-400' : 'text-neutral-500'"
+        class="inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm font-medium hover:bg-neutral-700 hover:text-neutral-100 transition-colors">
+        <svg class="w-4 h-4" :class="refreshActive ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.58m15.35 2A8 8 0 004.58 9m0 0H9m11 11v-5h-.58m0 0A8 8 0 014.07 13m15.35 2H15"/></svg>
+        <span x-text="autoRefresh ? 'Auto' : 'Paused'"></span>
+      </button>
+      <button @click="toggleTheme()" :aria-label="theme === 'dark' ? 'Use light mode' : 'Use dark mode'"
+        class="inline-flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm font-medium text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 transition-colors">
+        <svg x-show="theme === 'dark'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.35 17.65l-.71.71m12.72 0-.71-.71M6.35 6.35l-.71-.71M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        <svg x-show="theme === 'light'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 1012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        <span x-text="theme === 'dark' ? 'Light mode' : 'Dark mode'"></span>
+      </button>
+    </div>
   </header>
 
   <!-- Alpine root -->
@@ -304,10 +333,16 @@
                   <span :class="section.isError ? 'text-red-400' : 'text-neutral-500'"
                         x-text="section.label" class="text-sm font-semibold uppercase tracking-widest"></span>
                   <span x-show="section.meta" x-html="section.meta" class="text-sm font-mono"></span>
+                   <button @click="copySection(section)" :aria-label="'Copy ' + section.label" title="Copy to clipboard"
+                     class="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-200 transition-colors">
+                     <svg x-show="copiedSectionId !== section.id" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h7a2 2 0 012 2v7a2 2 0 01-2 2h-2m-7-7h7a2 2 0 012 2v7a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2z"/></svg>
+                     <svg x-show="copiedSectionId === section.id" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                     <span x-text="copiedSectionId === section.id ? 'Copied' : 'Copy'"></span>
+                   </button>
                 </div>
                 <pre :class="[section.isError ? 'text-red-300 bg-red-950/20' : 'text-neutral-300 bg-neutral-900', section.preClass]"
                      class="px-5 py-4 text-sm whitespace-pre-wrap overflow-auto leading-relaxed"
-                     x-text="section.showFull ? section.value : section.text"></pre>
+                     x-html="section.showFull ? section.html : section.textHtml"></pre>
                 <div x-show="section.truncated && !section.showFull"
                      class="flex items-center justify-between px-5 py-2 text-sm text-amber-400 bg-amber-950/40 border-t border-amber-900">
                   <span>Showing first <span x-text="section.kbShown"></span> KB of <span x-text="section.kbTotal"></span> KB.</span>

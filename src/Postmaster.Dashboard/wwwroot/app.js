@@ -32,6 +32,7 @@ const STATS_KEYS = {
 };
 
 const TERMINAL_STATUSES = new Set(['Succeeded', 'Dead', 'Cancelled']);
+const REFRESH_INTERVALS = [5_000, 10_000, 30_000, 60_000];
 
 function fmt(dt) {
   if (!dt) return '—';
@@ -42,10 +43,28 @@ const PRETTY_LIMIT  = 50_000;
 const DISPLAY_LIMIT = 100_000;
 
 function tryPrettyJson(str) {
-  if (!str) return str;
-  if (str.length > PRETTY_LIMIT) return str;
-  try { return JSON.stringify(JSON.parse(str), null, 2); }
-  catch { return str; }
+  if (!str || str.length > PRETTY_LIMIT) return { value: str, isJson: false };
+  try { return { value: JSON.stringify(JSON.parse(str), null, 2), isJson: true }; }
+  catch { return { value: str, isJson: false }; }
+}
+
+function escapeHtml(str) {
+  return str
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function highlightJson(str) {
+  const escaped = escapeHtml(str);
+  const tokenPattern = /("(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"\s*:|"(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"|\btrue\b|\bfalse\b|\bnull\b|-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/g;
+  return escaped.replace(tokenPattern, token => {
+    let cls = 'json-number';
+    if (token.startsWith('"')) cls = token.trimEnd().endsWith(':') ? 'json-key' : 'json-string';
+    else if (token === 'true' || token === 'false') cls = 'json-boolean';
+    else if (token === 'null') cls = 'json-null';
+    return `<span class="${cls}">${token}</span>`;
+  });
 }
 
 function statusCodeCls(code) {
@@ -68,11 +87,15 @@ function buildSections(m) {
   const out = [];
   const add = (id, label, raw, isError = false, meta = '') => {
     if (!raw) return;
-    const value = tryPrettyJson(raw);
+    const formatted = tryPrettyJson(raw);
+    const value = formatted.value;
     const truncated = value.length > DISPLAY_LIMIT;
+    const text = truncated ? value.slice(0, DISPLAY_LIMIT) : value;
     out.push({
-      id, label, value, meta, isError, showFull: false,
-      text: truncated ? value.slice(0, DISPLAY_LIMIT) : value,
+      id, label, value, meta, isError, isJson: formatted.isJson, showFull: false,
+      html: formatted.isJson ? highlightJson(value) : escapeHtml(value),
+      textHtml: formatted.isJson ? highlightJson(text) : escapeHtml(text),
+      text,
       truncated,
       preClass: isError ? 'break-all max-h-48' : 'max-h-96',
       kbShown: (DISPLAY_LIMIT / 1000).toFixed(0),
@@ -96,6 +119,15 @@ document.addEventListener('alpine:init', () => {
 
     // Stats
     stats: null,
+    statsLoading: false,
+
+    // Refresh
+    refreshTimer: null,
+    autoRefresh: localStorage.getItem('postmaster-auto-refresh') !== 'false',
+    refreshInterval: REFRESH_INTERVALS.includes(Number(localStorage.getItem('postmaster-refresh-interval')))
+      ? Number(localStorage.getItem('postmaster-refresh-interval'))
+      : 5_000,
+    lastUpdatedAt: null,
 
     // List
     view: 'list',
@@ -115,6 +147,7 @@ document.addEventListener('alpine:init', () => {
     detailNotFound: false,
     detail: null,
     detailSections: [],
+    copiedSectionId: null,
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -128,15 +161,14 @@ document.addEventListener('alpine:init', () => {
       }
       this._fetchStats();
 
-      setInterval(() => this._fetchStats(), 5_000);
-      setInterval(() => this._refreshList(), 5_000);
-      setInterval(() => this._refreshDetail(), 5_000);
+      this._startRefresh();
 
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-          this._fetchStats();
-          this._refreshList();
-          this._refreshDetail();
+          if (this.autoRefresh) this._refreshDashboard();
+          this._startRefresh();
+        } else {
+          this._stopRefresh();
         }
       });
 
@@ -145,6 +177,52 @@ document.addEventListener('alpine:init', () => {
         if (mid) { this.view = 'detail'; this._fetchDetail(mid); }
         else     { this.view = 'list';   this._fetchMessages(); }
       });
+    },
+
+    destroy() {
+      this._stopRefresh();
+    },
+
+    _startRefresh() {
+      if (!this.autoRefresh || this.refreshTimer != null || document.visibilityState !== 'visible') return;
+      this.refreshTimer = setInterval(() => this._refreshDashboard(), this.refreshInterval);
+    },
+
+    _stopRefresh() {
+      if (this.refreshTimer == null) return;
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    },
+
+    _refreshDashboard() {
+      if (!this.autoRefresh || document.visibilityState !== 'visible') return;
+      this._fetchStats();
+      if (this.view === 'list') this._refreshList();
+      else this._refreshDetail();
+    },
+
+    toggleAutoRefresh() {
+      this.autoRefresh = !this.autoRefresh;
+      localStorage.setItem('postmaster-auto-refresh', this.autoRefresh);
+      this._stopRefresh();
+      if (this.autoRefresh) {
+        this._refreshDashboard();
+        this._startRefresh();
+      }
+    },
+
+    updateRefreshInterval() {
+      localStorage.setItem('postmaster-refresh-interval', this.refreshInterval);
+      this._stopRefresh();
+      this._startRefresh();
+    },
+
+    get refreshActive() {
+      return this.statsLoading || (this.view === 'list' ? this.listLoading : this.detailLoading);
+    },
+
+    get lastUpdatedLabel() {
+      return this.lastUpdatedAt ? `Updated ${this.lastUpdatedAt.toLocaleTimeString()}` : 'Not updated yet';
     },
 
     _matchDetailPath() {
@@ -156,7 +234,14 @@ document.addEventListener('alpine:init', () => {
     // ── Stats ─────────────────────────────────────────────────────────────────
 
     async _fetchStats() {
-      try { this.stats = await apiCall('/stats'); } catch { }
+      if (this.statsLoading) return;
+      this.statsLoading = true;
+      try {
+        this.stats = await apiCall('/stats');
+        this.lastUpdatedAt = new Date();
+      }
+      catch { }
+      finally { this.statsLoading = false; }
     },
 
     statCount(key) {
@@ -320,6 +405,30 @@ document.addEventListener('alpine:init', () => {
         || TERMINAL_STATUSES.has(this.detail.status)) return;
 
       this._fetchDetail(this.detail.id);
+    },
+
+    async copySection(section) {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(section.value);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = section.value;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+
+        this.copiedSectionId = section.id;
+        setTimeout(() => {
+          if (this.copiedSectionId === section.id) this.copiedSectionId = null;
+        }, 2_000);
+      } catch (e) {
+        alert('Copy failed: ' + e.message);
+      }
     },
 
     async resetMessage() {
