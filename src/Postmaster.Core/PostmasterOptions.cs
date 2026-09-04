@@ -38,5 +38,20 @@ namespace Postmaster.Core
         /// certificate or certificate authority configuration issue. Default: <c>false</c>.
         /// </summary>
         public bool BypassSslCertificateValidation { get; set; }
+
+        /// <summary>
+        /// Sends <c>X-Correlation-Id</c> as <c>{CorrelationId}-{attempt}</c> so every delivery
+        /// attempt carries a distinct value, for recipients that reject a repeated correlation
+        /// value. The suffix is <see cref="Entities.OutboxMessage.AttemptCount"/>, which is
+        /// monotonic and therefore stays unique even after a message is manually reset.
+        /// The stored <see cref="Entities.OutboxMessage.CorrelationId"/> is unaffected, so all
+        /// attempts remain groupable by its prefix. Default: <c>false</c>.
+        /// </summary>
+        /// <remarks>
+        /// Only enable this when a recipient requires it. Recipients that de-duplicate on
+        /// <c>X-Correlation-Id</c> rely on the value being stable across retries, and suffixing
+        /// it would defeat that protection.
+        /// </remarks>
+        public bool AttemptScopedCorrelationId { get; set; }
     }
 }

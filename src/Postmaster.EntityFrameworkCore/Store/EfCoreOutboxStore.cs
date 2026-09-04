@@ -108,6 +108,7 @@ internal class EfCoreOutboxStore<TContext> : IOutboxStore
             .ExecuteUpdateAsync(s => s
                 .SetProperty(x => x.Status, message.Status)
                 .SetProperty(x => x.RetryCount, message.RetryCount)
+                .SetProperty(x => x.AttemptCount, message.AttemptCount)
                 .SetProperty(x => x.NextAttemptAt, message.NextAttemptAt)
                 .SetProperty(x => x.ProcessedAt, message.ProcessedAt)
                 .SetProperty(x => x.ResponseStatusCode, message.ResponseStatusCode)

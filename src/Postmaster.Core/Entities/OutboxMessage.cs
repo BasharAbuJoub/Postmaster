@@ -24,6 +24,13 @@ namespace Postmaster.Core.Entities
 
         public int RetryCount { get; set; }
 
+        /// <summary>
+        /// Total number of delivery attempts ever made for this message. Unlike
+        /// <see cref="RetryCount"/> this is never reset, so it uniquely identifies an attempt
+        /// across manual resets.
+        /// </summary>
+        public int AttemptCount { get; set; }
+
         public int MaxRetryCount { get; set; }
 
         public DateTime CreatedAt { get; set; }

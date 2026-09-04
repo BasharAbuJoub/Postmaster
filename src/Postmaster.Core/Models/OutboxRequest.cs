@@ -53,7 +53,14 @@ namespace Postmaster
         /// <summary>
         /// Optional correlation ID forwarded as <c>X-Correlation-Id</c> on the outgoing request.
         /// When not provided, a unique GUID is generated automatically.
+        /// The stored value is stable for the lifetime of the message, so every delivery attempt
+        /// remains groupable by it.
         /// </summary>
+        /// <remarks>
+        /// For recipients that reject a repeated correlation value, enable
+        /// <see cref="Core.PostmasterOptions.AttemptScopedCorrelationId"/>; the header is then
+        /// suffixed with the attempt number while this value stays unchanged.
+        /// </remarks>
         public string? CorrelationId { get; init; }
     }
 }

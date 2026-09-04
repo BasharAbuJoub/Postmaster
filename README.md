@@ -10,6 +10,7 @@ A robust outbox-backed HTTP dispatcher for .NET. Postmaster implements the trans
 - ⏰ **Scheduled delivery** — delay messages to a future time
 - 💀 **Dead message handling** — exhausted messages are isolated and manageable
 - 🔗 **Correlation ID** — every message carries an `X-Correlation-Id` header automatically
+- 🔢 **Attempt tracking** — every request carries an `X-Attempt` header so recipients can spot retries
 - 🏷️ **Metadata** — attach and search arbitrary data on messages
 - 🛠️ **Management API** — query, reset, cancel, and inspect messages via `IOutboxManager`
 - 📊 **Statistics** — built-in success rate and status breakdown
@@ -262,7 +263,29 @@ await _publisher.EnqueueAsync(new OutboxRequest
 });
 ```
 
-The correlation ID is forwarded as an `X-Correlation-Id` header on every outgoing HTTP request.
+The correlation ID is forwarded as an `X-Correlation-Id` header on every outgoing HTTP request. The stored value is **stable for the lifetime of the message** — every delivery attempt sends the same value, so all attempts stay groupable in your logs and in the dashboard.
+
+### 🔢 Attempt tracking
+
+Every request also carries an `X-Attempt` header holding the message's `AttemptCount` — the total number of delivery attempts ever made, starting at `1`. Because a stable correlation ID looks identical on every retry, this is what lets a recipient tell a first delivery from a retry.
+
+`AttemptCount` is **monotonic**: unlike `RetryCount`, it is never zeroed by a manual reset, so a message reset after 3 attempts next sends `X-Attempt: 4`.
+
+### 🔁 Attempt-scoped correlation IDs
+
+Some recipients reject a correlation value they have already seen. For those, enable:
+
+```csharp
+builder.Services.AddPostmaster(options =>
+{
+    options.AttemptScopedCorrelationId = true;
+});
+```
+
+The header is then sent as `{CorrelationId}-{AttemptCount}` (for example `a1b2c3-1`, then `a1b2c3-2`), so every attempt carries a distinct value. The stored `CorrelationId` is unchanged, so dashboard filtering still works and attempts remain groupable by the prefix.
+
+> [!WARNING]
+> Only enable this when a recipient requires it. Recipients that de-duplicate on `X-Correlation-Id` rely on the value being stable across retries, and suffixing it defeats that protection — see the **Delivery Guarantee** section below.
 
 ## 🏷️ Metadata
 
@@ -385,6 +408,7 @@ Multiple handlers can be registered — all are called after each message is per
 | `PollingInterval` | `30s` | How long the processor waits when there are no pending messages |
 | `ProcessingTimeout` | `10min` | How long a message can stay in `Processing` before being recovered |
 | `BypassSslCertificateValidation` | `false` | Bypasses TLS server certificate validation; enable only temporarily while resolving a certificate issue |
+| `AttemptScopedCorrelationId` | `false` | Suffixes `X-Correlation-Id` with the attempt number, for recipients that reject a repeated correlation value |
 
 > [!WARNING]
 > Setting `BypassSslCertificateValidation` to `true` accepts any server certificate and makes outbound requests vulnerable to man-in-the-middle attacks. Repair the endpoint certificate or trust chain and return this setting to `false` as soon as possible.
@@ -394,6 +418,9 @@ Multiple handlers can be registered — all are called after each message is per
 Postmaster guarantees **at-least-once delivery**. In normal operation no message is delivered twice. The rare exception is if a worker holds a message in `Processing` longer than `ProcessingTimeout` — the recovery sweep will reset it and another worker may pick it up while the original request is still in flight.
 
 To protect against this, make your receiving endpoints **idempotent** — check whether the message has already been processed using the `X-Correlation-Id` header or your own business key.
+
+> [!IMPORTANT]
+> If you enable `AttemptScopedCorrelationId`, the `X-Correlation-Id` value differs on every attempt and is **no longer usable as a de-duplication key**. Recipients must dedupe on a business key instead, or you must forward the message id yourself as a header via `OutboxRequest.Headers`.
 
 ## 🔌 Extending Postmaster
 

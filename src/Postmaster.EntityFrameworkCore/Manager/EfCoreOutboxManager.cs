@@ -178,6 +178,8 @@ namespace Postmaster.EFCore.Manager
 
         private static void ApplyResetSetters(UpdateSettersBuilder<OutboxMessage> s)
         {
+            // AttemptCount is deliberately not reset: it must stay monotonic so that
+            // attempt-scoped correlation IDs remain unique across resets.
             s.SetProperty(x => x.Status, OutboxMessageStatus.Pending)
                 .SetProperty(x => x.RetryCount, 0)
                 .SetProperty(x => x.NextAttemptAt, DateTime.UtcNow)

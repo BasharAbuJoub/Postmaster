@@ -15,6 +15,7 @@ builder.Services.AddPostmaster(postmaster =>
     postmaster.Configure(options =>
     {
         options.PollingInterval = TimeSpan.FromSeconds(10);
+        options.AttemptScopedCorrelationId = true;
     });
 });
 

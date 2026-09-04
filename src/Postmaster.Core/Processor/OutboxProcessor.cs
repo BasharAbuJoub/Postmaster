@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Postmaster.Core.Abstractions;
 using Postmaster.Core.Entities;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -54,6 +55,9 @@ namespace Postmaster.Core.Processor
             try
             {
                 var client = _httpClientFactory.CreateClient("Postmaster");
+
+                message.AttemptCount++;
+
                 var request = BuildRequest(message);
                 var stopwatch = Stopwatch.StartNew();
 
@@ -146,9 +150,23 @@ namespace Postmaster.Core.Processor
                         request.Headers.TryAddWithoutValidation(key, value);
 
             if (!string.IsNullOrEmpty(message.CorrelationId))
-                request.Headers.TryAddWithoutValidation("X-Correlation-Id", message.CorrelationId);
+                request.Headers.TryAddWithoutValidation("X-Correlation-Id", BuildCorrelationId(message));
+
+            // Lets the recipient distinguish a first delivery from a retry, which is otherwise
+            // invisible when the correlation ID is stable across attempts.
+            request.Headers.TryAddWithoutValidation("X-Attempt", message.AttemptCount.ToString(CultureInfo.InvariantCulture));
 
             return request;
+        }
+
+        private string BuildCorrelationId(OutboxMessage message)
+        {
+            if (!_options.AttemptScopedCorrelationId)
+                return message.CorrelationId;
+
+            // AttemptCount is monotonic and already incremented for the current attempt, so the
+            // suffix stays unique even after a manual reset (which zeroes RetryCount).
+            return $"{message.CorrelationId}-{message.AttemptCount}";
         }
     }
 }

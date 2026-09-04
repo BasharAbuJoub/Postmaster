@@ -59,6 +59,7 @@ namespace Postmaster.Core
                 Channel = request.Channel,
                 Status = OutboxMessageStatus.Pending,
                 RetryCount = 0,
+                AttemptCount = 0,
                 MaxRetryCount = request.MaxRetryCount ?? _options.DefaultMaxRetryCount,
                 NextAttemptAt = request.ScheduleAt ?? DateTime.UtcNow,
                 Metadata = request.Metadata,
