@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -27,7 +27,7 @@
     body[data-theme="light"] .text-neutral-400 { color: #475569; }
     body[data-theme="light"] .text-neutral-500 { color: #64748b; }
     body[data-theme="light"] .text-neutral-600 { color: #94a3b8; }
-    body[data-theme="light"] header .text-white,
+    body[data-theme="light"] header .text-white:not(.pm-logo),
     body[data-theme="light"] .bg-neutral-700.text-white { color: #1e293b; }
     body[data-theme="light"] .hover\:bg-neutral-800:hover { background-color: #f1f5f9; }
     body[data-theme="light"] .hover\:text-neutral-200:hover,
@@ -58,13 +58,33 @@
     body[data-theme="light"] .json-boolean { color: #a21caf; }
     body[data-theme="light"] .json-null { color: #64748b; }
     body[data-theme="light"] input[type="datetime-local"] { color-scheme: light; }
+    body[data-theme="light"] .pm-logo { background-color: #4f46e5; color: #ffffff; }
+    body[data-theme="light"] .pm-logo svg { color: #ffffff; }
+    /* Detail header card (identity tiles + vitals strip) */
+    body[data-theme="light"] .bg-neutral-950\/60,
+    body[data-theme="light"] .bg-neutral-950\/40 { background-color: #f8fafc; }
+    body[data-theme="light"] .bg-neutral-950 { background-color: #f1f5f9; }
+    body[data-theme="light"] .hover\:bg-neutral-950:hover { background-color: #f1f5f9; }
+    body[data-theme="light"] .text-neutral-50 { color: #0f172a; }
+    body[data-theme="light"] .text-neutral-700 { color: #94a3b8; }
+    body[data-theme="light"] .hover\:border-neutral-600:hover { border-color: #94a3b8; }
+    body[data-theme="light"] .group:hover .group-hover\:text-neutral-400 { color: #475569; }
+    body[data-theme="light"] .group:hover .group-hover\:text-neutral-100 { color: #0f172a; }
+    body[data-theme="light"] .hover\:text-neutral-100:hover { color: #0f172a; }
+    body[data-theme="light"] .bg-neutral-800\/80 { background-color: #f1f5f9; }
+    body[data-theme="light"] .shadow-black\/30 { --tw-shadow-color: rgba(15, 23, 42, .08); }
   </style>
 </head>
 <body x-data="dashboard" x-bind:data-theme="theme" x-cloak class="bg-neutral-950 min-h-screen text-neutral-100 antialiased">
 
   <!-- Header (static, outside Alpine) -->
   <header class="bg-neutral-900 border-b border-neutral-800 px-6 py-3.5 flex items-center gap-3">
-    <span class="text-white text-lg">📬</span>
+    <span class="pm-logo inline-flex items-center justify-center w-7 h-7 rounded-md bg-indigo-600 text-white shadow-sm shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5A1.5 1.5 0 0 1 4.5 6h15A1.5 1.5 0 0 1 21 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5v-9Z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="m3.5 7.5 8.5 6 8.5-6"/>
+      </svg>
+    </span>
     <span class="text-white font-semibold tracking-tight">Postmaster</span>
     <span class="ml-1 text-neutral-500 text-sm font-medium">Dashboard</span>
     <div class="ml-auto flex items-center gap-2">
@@ -207,8 +227,8 @@
                   <td class="px-4 py-3">
                     <span x-text="m.method" class="font-mono text-sm font-bold px-1.5 py-0.5 bg-neutral-700 text-white rounded"></span>
                   </td>
-                  <td class="px-4 py-3 text-base text-neutral-400 max-w-xs">
-                    <span x-text="m.url" :title="m.url" class="block truncate"></span>
+                  <td class="px-4 py-3 text-base text-neutral-400 max-w-0 w-full">
+                    <span x-text="m.url" :title="m.url" class="block truncate font-mono text-sm"></span>
                   </td>
                   <td class="px-4 py-3">
                     <span x-text="m._statusMeta.label" :class="m._statusMeta.cls"
@@ -217,7 +237,10 @@
                   <td class="px-4 py-3 text-base text-neutral-500 max-w-[120px]">
                     <span x-text="m.channel ?? '—'" :title="m.channel ?? ''" class="block truncate"></span>
                   </td>
-                  <td x-text="`${m.retryCount}/${m.maxRetryCount}`" class="px-4 py-3 text-base text-neutral-500"></td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span x-text="m._retry.label" :title="m._retry.title"
+                      class="text-base text-neutral-500 tabular-nums"></span>
+                  </td>
                   <td x-text="m._fmtCreated" class="px-4 py-3 text-base text-neutral-500 whitespace-nowrap"></td>
                   <td class="px-4 py-3 text-right">
                     <span class="inline-flex items-center justify-center w-7 h-7 rounded bg-neutral-800 text-neutral-500 group-hover:bg-indigo-950 group-hover:text-indigo-400 transition-colors">
@@ -228,7 +251,7 @@
               </template>
             </tbody>
           </table>
-          <div x-show="listLoading" class="text-center py-16 text-base text-neutral-500">Loading…</div>
+          <div x-show="listLoading && messages.length === 0" class="text-center py-16 text-base text-neutral-500">Loading…</div>
           <div x-show="!listLoading && !listError && messages.length === 0" class="text-center py-16 text-base text-neutral-500">No messages found.</div>
           <div x-show="listError" x-text="'Failed to load: ' + listError" class="text-center py-8 text-sm text-red-400"></div>
         </div>
@@ -257,29 +280,48 @@
           Back to messages
         </button>
 
-        <div x-show="detailLoading" class="text-center py-16 text-base text-neutral-500">Loading…</div>
+        <div x-show="detailLoading && !detail" class="text-center py-16 text-base text-neutral-500">Loading…</div>
         <div x-show="detailNotFound && !detailLoading" class="text-center py-16 text-base text-neutral-500">Message not found.</div>
 
         <template x-if="detail">
           <div class="space-y-4">
 
-            <!-- Title card -->
-            <div class="bg-neutral-900 rounded-md border border-neutral-800 px-5 py-4 shadow-sm">
-              <div class="flex items-start justify-between gap-4">
+            <!-- Header card -->
+            <div class="relative bg-neutral-900 rounded-lg border border-neutral-800 shadow-lg shadow-black/30 overflow-hidden">
+
+              <!-- Status accent rail -->
+              <div :class="detail._statusMeta.bar" class="absolute inset-y-0 left-0 w-1"></div>
+
+              <!-- Row 1: request line + actions -->
+              <div class="pl-6 pr-5 py-5 flex items-start justify-between gap-5">
                 <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2.5 mb-2 flex-wrap">
-                    <span x-text="detail.method" class="font-mono text-sm font-bold px-2 py-1 bg-neutral-700 text-white rounded-md tracking-wide"></span>
-                    <span x-text="detail._statusMeta.label" :class="detail._statusMeta.cls"
-                      class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold"></span>
+                  <div class="flex items-center gap-2 mb-2.5 flex-wrap">
+                    <span x-text="detail.method"
+                      class="font-mono text-xs font-bold px-2 py-1 bg-neutral-800 text-neutral-100 border border-neutral-700 rounded tracking-widest"></span>
+                    <span :class="detail._statusMeta.cls"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold">
+                      <span :class="detail._statusMeta.dot" class="w-1.5 h-1.5 rounded-full"></span>
+                      <span x-text="detail._statusMeta.label"></span>
+                    </span>
+                    <span x-show="detail.channel" x-text="detail.channel"
+                      class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-800/80 text-neutral-400 border border-neutral-700"></span>
                   </div>
-                  <div x-text="detail.url" class="text-base text-neutral-400 font-mono break-all leading-relaxed"></div>
+                  <div class="group flex items-start gap-2">
+                    <div x-text="detail.url"
+                      class="text-[15px] text-neutral-100 font-mono break-all leading-relaxed"></div>
+                    <button @click="copyField('url', detail.url)" aria-label="Copy URL" title="Copy URL"
+                      class="shrink-0 mt-1 p-1 rounded text-neutral-600 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-neutral-100 hover:bg-neutral-800 transition">
+                      <svg x-show="copiedFieldKey !== 'url'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                      <svg x-show="copiedFieldKey === 'url'" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </button>
+                  </div>
                 </div>
-                <div class="flex gap-2 shrink-0 mt-0.5">
+                <div class="flex gap-2 shrink-0">
                   <button @click="copyCurl()" title="Copy as cURL"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold bg-neutral-800 text-neutral-300 border border-neutral-700 rounded-md hover:bg-neutral-700 hover:text-white transition-colors">
                     <svg x-show="!copiedCurl" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l-3 3 3 3m8-6l3 3-3 3m-5 3 2-12"/></svg>
                     <svg x-show="copiedCurl" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <span x-text="copiedCurl ? 'Copied' : 'Copy cURL'"></span>
+                    <span x-text="copiedCurl ? 'Copied' : 'cURL'"></span>
                   </button>
                   <button x-show="detail._canReset" @click="resetMessage()"
                     class="px-3 py-1.5 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 active:bg-indigo-700 shadow-sm transition-colors">Reset</button>
@@ -287,72 +329,107 @@
                     class="px-3 py-1.5 text-sm font-semibold bg-neutral-800 text-red-400 border border-red-900 rounded-md hover:bg-red-950 active:bg-red-900 transition-colors">Cancel</button>
                 </div>
               </div>
-            </div>
 
-            <!-- Info grid (3-column) -->
-            <div class="bg-neutral-900 rounded-md border border-neutral-800 shadow-sm overflow-hidden">
-              <div class="grid grid-cols-3">
-                <div class="px-4 py-3 border-b border-r border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">ID</div>
-                  <div x-text="detail.id" class="font-mono text-sm text-neutral-200 break-all"></div>
+              <!-- Row 2: identity keys -->
+              <div class="pl-6 pr-5 pb-4 grid gap-2.5 xl:grid-cols-2">
+                <button @click="copyField('id', detail.id)" title="Click to copy message ID"
+                  class="group relative text-left rounded-lg border border-neutral-800 bg-neutral-950/60 px-3.5 py-2.5 hover:border-neutral-600 hover:bg-neutral-950 transition-colors">
+                  <div class="flex items-center justify-between gap-3 mb-1">
+                    <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Message ID</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wider transition-colors"
+                      :class="copiedFieldKey === 'id' ? 'text-emerald-400' : 'text-neutral-700 group-hover:text-neutral-400'"
+                      x-text="copiedFieldKey === 'id' ? 'Copied' : 'Copy'"></span>
+                  </div>
+                  <div x-text="detail.id" class="font-mono text-sm text-neutral-50 break-all leading-snug select-all"></div>
+                </button>
+
+                <button @click="copyField('correlationId', detail.correlationId)" title="Click to copy correlation ID"
+                  :disabled="!canCopyField(detail.correlationId)"
+                  class="group relative text-left rounded-lg border border-neutral-800 bg-neutral-950/60 px-3.5 py-2.5 hover:border-neutral-600 hover:bg-neutral-950 transition-colors disabled:hover:border-neutral-800 disabled:hover:bg-neutral-950/60">
+                  <div class="flex items-center justify-between gap-3 mb-1">
+                    <span class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Correlation ID</span>
+                    <span x-show="canCopyField(detail.correlationId)"
+                      class="text-[10px] font-semibold uppercase tracking-wider transition-colors"
+                      :class="copiedFieldKey === 'correlationId' ? 'text-emerald-400' : 'text-neutral-700 group-hover:text-neutral-400'"
+                      x-text="copiedFieldKey === 'correlationId' ? 'Copied' : 'Copy'"></span>
+                  </div>
+                  <div x-text="detail.correlationId ?? '—'" class="font-mono text-sm text-neutral-50 break-all leading-snug select-all"></div>
+                </button>
+              </div>
+
+              <!-- Row 3: vitals (counters) -->
+              <div class="pl-6 pr-5 py-3 border-t border-neutral-800 bg-neutral-950/40 grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-4">
+                <div class="min-w-0" title="Total delivery attempts ever made; not cleared by a reset">
+                  <div class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-0.5">Attempts</div>
+                  <div class="text-sm text-neutral-100 font-semibold tabular-nums" x-text="detail.attemptCount ?? '—'"></div>
                 </div>
-                <div class="px-4 py-3 border-b border-r border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Correlation ID</div>
-                  <div x-text="detail.correlationId ?? '—'" class="font-mono text-sm text-neutral-200 break-all"></div>
+                <div class="min-w-0" :title="detail._retry.title">
+                  <div class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-0.5">Retries</div>
+                  <div class="text-sm text-neutral-100 font-semibold tabular-nums" x-text="detail._retry.label"></div>
                 </div>
-                <div class="px-4 py-3 border-b border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Channel</div>
-                  <div x-text="detail.channel ?? '—'" class="text-sm text-neutral-200"></div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-0.5">Response</div>
+                  <div class="text-sm text-neutral-100 font-semibold tabular-nums" x-text="detail.responseStatusCode ?? '—'"></div>
                 </div>
-                <div class="px-4 py-3 border-b border-r border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Retries</div>
-                  <div x-text="`${detail.retryCount} / ${detail.maxRetryCount}`" class="text-sm text-neutral-200 tabular-nums"></div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-0.5">Elapsed</div>
+                  <div class="text-sm text-neutral-100 font-semibold tabular-nums" x-text="detail._elapsedLabel"></div>
                 </div>
-                <div class="px-4 py-3 border-b border-r border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Created</div>
-                  <div x-text="detail._fmtCreated" class="text-sm text-neutral-200"></div>
+              </div>
+
+              <!-- Row 4: vitals (timestamps) -->
+              <div class="pl-6 pr-5 py-3 border-t border-neutral-800 bg-neutral-950/40 grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
+                <div class="min-w-0">
+                  <div class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-0.5">Created</div>
+                  <div class="text-sm text-neutral-300 tabular-nums truncate" :title="detail._fmtCreated" x-text="detail._fmtCreated"></div>
                 </div>
-                <div class="px-4 py-3 border-b border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Next Attempt</div>
-                  <div x-text="detail._fmtNext" class="text-sm text-neutral-200"></div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-0.5">Processed</div>
+                  <div class="text-sm text-neutral-300 tabular-nums truncate" :title="detail._fmtProcessed" x-text="detail._fmtProcessed"></div>
                 </div>
-                <div class="px-4 py-3 border-r border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Processed At</div>
-                  <div x-text="detail._fmtProcessed" class="text-sm text-neutral-200"></div>
-                </div>
-                <div class="px-4 py-3 border-r border-neutral-800">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Elapsed</div>
-                  <div x-text="detail._elapsedLabel" class="text-sm text-neutral-200 tabular-nums"></div>
-                </div>
-                <div class="px-4 py-3">
-                  <div class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-1">Response Status</div>
-                  <div x-text="detail.responseStatusCode ?? '—'" class="text-sm text-neutral-200 tabular-nums"></div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] mb-0.5">Next attempt</div>
+                  <div class="text-sm text-neutral-300 tabular-nums truncate" :title="detail._fmtNext" x-text="detail._fmtNext"></div>
                 </div>
               </div>
             </div>
+
 
             <!-- Expandable sections (error, headers, payload, response, metadata) -->
             <template x-for="(section, index) in detailSections" :key="section.id">
               <div :class="section.isError ? 'border-red-900' : 'border-neutral-800'" class="rounded-md border overflow-hidden shadow-sm">
                 <div :class="section.isError ? 'bg-red-950/60 border-b border-red-900' : 'bg-neutral-800 border-b border-neutral-800'"
                      class="px-5 py-3 flex items-center gap-3">
-                  <span :class="section.isError ? 'text-red-400' : 'text-neutral-500'"
-                        x-text="section.label" class="text-sm font-semibold uppercase tracking-widest"></span>
+                  <button @click="toggleSection(section.id)"
+                    :aria-expanded="!isSectionCollapsed(section.id)"
+                    :aria-label="(isSectionCollapsed(section.id) ? 'Expand ' : 'Collapse ') + section.label"
+                    class="flex items-center gap-2 min-w-0 group/sec">
+                    <svg :class="[isSectionCollapsed(section.id) ? '-rotate-90' : '', section.isError ? 'text-red-400' : 'text-neutral-500 group-hover/sec:text-neutral-300']"
+                         class="w-4 h-4 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                    <span :class="section.isError ? 'text-red-400' : 'text-neutral-500 group-hover/sec:text-neutral-300'"
+                          x-text="section.label" class="text-sm font-semibold uppercase tracking-widest transition-colors"></span>
+                  </button>
                   <span x-show="section.meta" x-html="section.meta" class="text-sm font-mono"></span>
-                   <button @click="copySection(section)" :aria-label="'Copy ' + section.label" title="Copy to clipboard"
-                     class="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-200 transition-colors">
-                     <svg x-show="copiedSectionId !== section.id" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h7a2 2 0 012 2v7a2 2 0 01-2 2h-2m-7-7h7a2 2 0 012 2v7a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2z"/></svg>
-                     <svg x-show="copiedSectionId === section.id" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                     <span x-text="copiedSectionId === section.id ? 'Copied' : 'Copy'"></span>
-                   </button>
+                  <span x-show="isSectionCollapsed(section.id)" class="text-xs text-neutral-600 font-mono"
+                        x-text="`${section.kbTotal} KB`"></span>
+                  <button @click="copySection(section)" :aria-label="'Copy ' + section.label" title="Copy to clipboard"
+                    class="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 hover:text-neutral-200 transition-colors">
+                    <svg x-show="copiedSectionId !== section.id" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h7a2 2 0 012 2v7a2 2 0 01-2 2h-2m-7-7h7a2 2 0 012 2v7a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2z"/></svg>
+                    <svg x-show="copiedSectionId === section.id" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span x-text="copiedSectionId === section.id ? 'Copied' : 'Copy'"></span>
+                  </button>
                 </div>
-                <pre :class="[section.isError ? 'text-red-300 bg-red-950/20' : 'text-neutral-300 bg-neutral-900', section.preClass]"
-                     class="px-5 py-4 text-sm whitespace-pre-wrap overflow-auto leading-relaxed"
-                     x-html="section.showFull ? section.html : section.textHtml"></pre>
-                <div x-show="section.truncated && !section.showFull"
-                     class="flex items-center justify-between px-5 py-2 text-sm text-amber-400 bg-amber-950/40 border-t border-amber-900">
-                  <span>Showing first <span x-text="section.kbShown"></span> KB of <span x-text="section.kbTotal"></span> KB.</span>
-                  <button @click="section.showFull = true" class="font-medium underline hover:text-amber-300">Show full</button>
+                <div x-show="!isSectionCollapsed(section.id)" x-collapse>
+                  <pre :class="[section.isError ? 'text-red-300 bg-red-950/20' : 'text-neutral-300 bg-neutral-900', section.preClass]"
+                       class="px-5 py-4 text-sm whitespace-pre-wrap overflow-auto leading-relaxed"
+                       x-html="section.showFull ? section.html : section.textHtml"></pre>
+                  <div x-show="section.truncated && !section.showFull"
+                       class="flex items-center justify-between px-5 py-2 text-sm text-amber-400 bg-amber-950/40 border-t border-amber-900">
+                    <span>Showing first <span x-text="section.kbShown"></span> KB of <span x-text="section.kbTotal"></span> KB.</span>
+                    <button @click="section.showFull = true" class="font-medium underline hover:text-amber-300">Show full</button>
+                  </div>
                 </div>
               </div>
             </template>

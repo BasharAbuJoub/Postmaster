@@ -26,6 +26,12 @@ namespace Postmaster
         /// <summary>How many delivery attempts have been made so far.</summary>
         public int RetryCount { get; init; }
 
+        /// <summary>
+        /// Total number of delivery attempts ever made. Unlike <see cref="RetryCount"/> this is
+        /// never cleared by a reset, so it keeps counting across manual retries.
+        /// </summary>
+        public int AttemptCount { get; init; }
+
         /// <summary>The maximum number of delivery attempts before the message is marked Dead.</summary>
         public int MaxRetryCount { get; init; }
 

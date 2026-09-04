@@ -8,13 +8,29 @@ async function apiCall(path, method = 'GET') {
 }
 
 const STATUS_META = {
-  Pending:    { label: 'Pending',    cls: 'bg-blue-950 text-blue-400 ring-1 ring-blue-800' },
-  Processing: { label: 'Processing', cls: 'bg-amber-950 text-amber-400 ring-1 ring-amber-800' },
-  Succeeded:  { label: 'Succeeded',  cls: 'bg-emerald-950 text-emerald-400 ring-1 ring-emerald-800' },
-  Failed:     { label: 'Failed',     cls: 'bg-red-950 text-red-400 ring-1 ring-red-800' },
-  Dead:       { label: 'Dead',       cls: 'bg-neutral-800 text-neutral-400 ring-1 ring-neutral-700' },
-  Cancelled:  { label: 'Cancelled',  cls: 'bg-neutral-800 text-neutral-500 ring-1 ring-neutral-700' },
+  Pending:    { label: 'Pending',    cls: 'bg-blue-950 text-blue-400 ring-1 ring-blue-800',          bar: 'bg-blue-500',    dot: 'bg-blue-400' },
+  Processing: { label: 'Processing', cls: 'bg-amber-950 text-amber-400 ring-1 ring-amber-800',       bar: 'bg-amber-500',   dot: 'bg-amber-400' },
+  Succeeded:  { label: 'Succeeded',  cls: 'bg-emerald-950 text-emerald-400 ring-1 ring-emerald-800', bar: 'bg-emerald-500', dot: 'bg-emerald-400' },
+  Failed:     { label: 'Failed',     cls: 'bg-red-950 text-red-400 ring-1 ring-red-800',             bar: 'bg-red-500',     dot: 'bg-red-400' },
+  Dead:       { label: 'Dead',       cls: 'bg-neutral-800 text-neutral-400 ring-1 ring-neutral-700', bar: 'bg-neutral-500', dot: 'bg-neutral-400' },
+  Cancelled:  { label: 'Cancelled',  cls: 'bg-neutral-800 text-neutral-500 ring-1 ring-neutral-700', bar: 'bg-neutral-600', dot: 'bg-neutral-500' },
 };
+
+// Uniform retry presentation shared by the list and the detail view.
+function retryMeta(m) {
+  const used = Number(m?.retryCount ?? 0);
+  const max = Number(m?.maxRetryCount ?? 0);
+  const hasMax = Number.isFinite(max) && max > 0;
+
+  return {
+    used,
+    max,
+    label: hasMax ? `${used} / ${max}` : String(used),
+    title: hasMax
+      ? `${used} of ${max} retries used`
+      : `${used} retries used (no limit configured)`,
+  };
+}
 
 const SIDEBAR_ITEMS = [
   { key: 'all', label: 'All',        value: '',  badgeCls: null },
@@ -193,8 +209,10 @@ document.addEventListener('alpine:init', () => {
     detailSections: [],
     copiedSectionId: null,
     copiedCurl: false,
+    copiedFieldKey: null,
+    collapsedSections: {},
 
-    // ── Init ──────────────────────────────────────────────────────────────────
+    // ── Init
 
     init() {
       const id = this._matchDetailPath();
@@ -396,6 +414,7 @@ document.addEventListener('alpine:init', () => {
           ...m,
           _index: (data.page - 1) * data.pageSize + i + 1,
           _statusMeta: STATUS_META[m.status] ?? { label: m.status ?? 'Unknown', cls: 'bg-neutral-800 text-neutral-400' },
+          _retry: retryMeta(m),
           _fmtCreated: fmt(m.createdAt),
         }));
       } catch (e) {
@@ -415,18 +434,23 @@ document.addEventListener('alpine:init', () => {
 
     // ── Detail ────────────────────────────────────────────────────────────────
 
-    async _fetchDetail(id) {
+    async _fetchDetail(id, isRefresh = false) {
       this.detailLoading = true;
       this.detailNotFound = false;
-      this.detail = null;
-      this.detailSections = [];
+      // On refresh keep the current detail mounted: clearing it collapses the view,
+      // which flickers and resets the scroll position.
+      if (!isRefresh) {
+        this.detail = null;
+        this.detailSections = [];
+      }
 
       try {
         const m = await apiCall('/messages/' + id);
         if (!m) { this.detailNotFound = true; return; }
         this.detail = {
           ...m,
-          _statusMeta: STATUS_META[m.status] ?? { label: m.status ?? 'Unknown', cls: 'bg-neutral-800 text-neutral-400' },
+          _statusMeta: STATUS_META[m.status] ?? { label: m.status ?? 'Unknown', cls: 'bg-neutral-800 text-neutral-400', bar: 'bg-neutral-600', dot: 'bg-neutral-500' },
+          _retry: retryMeta(m),
           _fmtCreated:   fmt(m.createdAt),
           _fmtNext:      fmt(m.nextAttemptAt),
           _fmtProcessed: fmt(m.processedAt),
@@ -436,7 +460,8 @@ document.addEventListener('alpine:init', () => {
         };
         this.detailSections = buildSections(m);
       } catch {
-        this.detailNotFound = true;
+        // A failed background refresh should not replace a valid view with an error.
+        if (!isRefresh) this.detailNotFound = true;
       } finally {
         this.detailLoading = false;
       }
@@ -449,7 +474,37 @@ document.addEventListener('alpine:init', () => {
         || !this.detail
         || TERMINAL_STATUSES.has(this.detail.status)) return;
 
-      this._fetchDetail(this.detail.id);
+      this._fetchDetail(this.detail.id, true);
+    },
+
+    canCopyField(value) {
+      return value != null && value !== '' && value !== '—';
+    },
+
+    isSectionCollapsed(id) {
+      return this.collapsedSections[id] !== false;
+    },
+
+    toggleSection(id) {
+      this.collapsedSections = {
+        ...this.collapsedSections,
+        [id]: this.isSectionCollapsed(id) ? false : true,
+      };
+    },
+
+    async copyField(key, value) {
+      if (!this.canCopyField(value)) return;
+
+      try {
+        await copyText(String(value));
+
+        this.copiedFieldKey = key;
+        setTimeout(() => {
+          if (this.copiedFieldKey === key) this.copiedFieldKey = null;
+        }, 2_000);
+      } catch (e) {
+        alert('Copy failed: ' + e.message);
+      }
     },
 
     async copySection(section) {
